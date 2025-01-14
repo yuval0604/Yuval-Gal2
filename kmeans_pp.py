@@ -9,17 +9,17 @@ if len(sys.argv) not in [5,6]:
     
 
 try:
-    k = int(sys.argv[1])
+    k = sys.argv[1]
     
     if len(sys.argv)==5:
         max_iter = 300
-        eps = float(sys.argv[2])
+        eps = sys.argv[2]
         file_1 = sys.argv[3]
         file_2 = sys.argv[4]
     
     else:
-        max_iter = int(sys.argv[2])
-        eps = float(sys.argv[3])
+        max_iter = sys.argv[2]
+        eps = sys.argv[3]
         file_1 = sys.argv[4]
         file_2 = sys.argv[5]
 
@@ -33,7 +33,7 @@ try:
         print ("Invalid maximum iteration!")
         sys.exit() 
     
-    if eps<0:
+    if float(eps) < 0:
         print ("Invalid epsilon!")
         sys.exit()  
 
