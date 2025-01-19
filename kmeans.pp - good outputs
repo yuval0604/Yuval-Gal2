@@ -1,0 +1,107 @@
+import mykmeanssp
+import numpy as np
+import pandas as pd
+import sys
+
+def validate_input(k: int, iter: int, eps: float, n: int):
+    """Validate input parameters"""
+    if not isinstance(k, int) or k <= 1 or k >= n:
+        print("Invalid number of clusters!")
+        sys.exit(1)
+    
+    if iter is not None:  # iter is optional
+        if not isinstance(iter, int) or iter <= 1 or iter >= 1000:
+            print("Invalid maximum iteration!")
+            sys.exit(1)
+            
+    if eps < 0:
+        print("Invalid epsilon!")
+        sys.exit(1)
+
+def kmeans_pp(points: np.ndarray, k: int):
+    """
+    Implement K-means++ algorithm for initializing centroids
+    Returns: initial centroids indices and the centroids themselves
+    """
+    np.random.seed(1234)
+    n = len(points)
+    
+    # Choose first centroid randomly
+    first_centroid_idx = np.random.choice(n)
+    centroids_idx = [first_centroid_idx]
+    centroids = [points[first_centroid_idx]]
+    
+    # Choose the rest of the centroids
+    for _ in range(1, k):
+        # Calculate distances to nearest centroid for each point
+        distances = np.full(n, np.inf)
+        for i, point in enumerate(points):
+            for centroid in centroids:
+                # Calculate Euclidean distance (not squared)
+                curr_dist = np.sqrt(np.sum((point - centroid) ** 2))
+                distances[i] = min(distances[i], curr_dist)
+        
+        # Normalize distances to get probabilities
+        probabilities = distances / np.sum(distances)
+        
+        # Choose next centroid
+        next_centroid_idx = np.random.choice(n, p=probabilities)
+        centroids_idx.append(next_centroid_idx)
+        centroids.append(points[next_centroid_idx])
+    
+    return centroids_idx, [cent.tolist() for cent in centroids]
+
+def main():
+    # Parse command line arguments
+    if len(sys.argv) not in [5, 6]:
+        print("An Error Has Occurred")
+        sys.exit(1)
+        
+    k = int(sys.argv[1])
+    if len(sys.argv) == 6:
+        iter = int(sys.argv[2])
+        eps = float(sys.argv[3])
+        file1_name = sys.argv[4]
+        file2_name = sys.argv[5]
+    else:
+        iter = 300  # default value
+        eps = float(sys.argv[2])
+        file1_name = sys.argv[3]
+        file2_name = sys.argv[4]
+    
+    # Read and process input files
+    try:
+        df1 = pd.read_csv(file1_name, header=None)
+        df2 = pd.read_csv(file2_name, header=None)
+        
+        # Perform inner join on first column
+        merged_df = pd.merge(df1, df2, on=0)
+        merged_df = merged_df.sort_values(by=0)  # Sort by key
+        
+        # Extract points (exclude the key column)
+        points = merged_df.iloc[:, 1:].values
+        n = len(points)
+        
+        # Validate input parameters
+        validate_input(k, iter, eps, n)
+        
+        # Run kmeans++ to get initial centroids
+        initial_centroids_idx, initial_centroids = kmeans_pp(points, k)
+        
+        # Convert to format expected by C extension
+        points_for_c = points.tolist()
+        
+        # Run C extension kmeans
+        final_centroids = mykmeanssp.fit(initial_centroids, points_for_c, k, iter, eps)
+        
+        # Print results
+        print(','.join(map(str, initial_centroids_idx)))
+        for centroid in final_centroids:
+            print(','.join(f'{x:.4f}' for x in centroid))
+            
+    except Exception as e:
+        print("An Error Has Occurred")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
