@@ -1,0 +1,103 @@
+import mykmeanssp
+import numpy as np
+import pandas as pd
+import sys
+import math
+
+def kmeans_pp(points: np.ndarray, k: int):
+
+    np.random.seed(1234)
+    n = len(points)
+
+    first_centroid_idx = np.random.choice(n)
+    centroids_idx = [first_centroid_idx]
+    centroids = [points[first_centroid_idx]]
+    
+    for _ in range(1, int(k)):
+        # Calculate distances to nearest centroid for each point
+        distances = np.full(n, np.inf)
+        for i, point in enumerate(points):
+            for centroid in centroids:
+                # Calculate Euclidean distance (not squared)
+                curr_dist = np.sqrt(np.sum((point - centroid) ** 2))
+                distances[i] = min(distances[i], curr_dist)
+        
+        # Normalize distances to get probabilities
+        probabilities = distances / np.sum(distances)
+        
+        # Choose next centroid
+        next_centroid_idx = np.random.choice(n, p=probabilities)
+        centroids_idx.append(next_centroid_idx)
+        centroids.append(points[next_centroid_idx])
+    
+    return centroids_idx, [cent.tolist() for cent in centroids]
+
+def main():
+    if len(sys.argv) not in [5, 6]:
+        print("An Error Has Occurred")
+        sys.exit()
+
+    k = sys.argv[1]
+
+    if len(sys.argv) == 5:
+        iter = 300
+        eps = sys.argv[2]
+        file1_name = sys.argv[3]
+        file2_name = sys.argv[4]
+    else:
+        iter = sys.argv[2]
+        eps = sys.argv[3]
+        file1_name = sys.argv[4]
+        file2_name = sys.argv[5]
+
+    f1 = file1_name[-4:]
+    f2 = file2_name[-4:]
+    if (f1 not in [".txt", ".csv"]) or (f2 not in [".txt", ".csv"]):
+        print("NA")
+        sys.exit()
+    
+    if iter.isdigit() == False or not (1 < int(iter) < 1000) or iter[0] == "0":
+        print("Invalid maximum iteration!")
+        sys.exit()
+
+    try:
+        eps = float(eps)
+            
+    except:
+        print("Invalid epsilon!")
+        sys.exit()
+    
+    if eps < 0:
+        print("Invalid epsilon!")
+        sys.exit()
+
+    try:
+        df1 = pd.read_csv(file1_name, header=None)
+        df2 = pd.read_csv(file2_name, header=None)
+
+        merged_df = pd.merge(df1, df2, on=0)
+        merged_df = merged_df.sort_values(by=0)  
+        points = merged_df.iloc[:, 1:].values
+        n = len(points)
+
+        if k.isdigit() == False or not (1 < int(k) < n):
+            print("Invalid number of clusters!")
+            sys.exit()
+
+        
+        initial_centroids_idx, initial_centroids = kmeans_pp(points, k)
+        
+        points_for_c = points.tolist()
+        
+        final_centroids = mykmeanssp.fit(initial_centroids, points_for_c, int(k), int(iter), float(eps))
+        
+        print(','.join(map(str, initial_centroids_idx)))
+        for centroid in final_centroids:
+            print(','.join(f'{x:.4f}' for x in centroid))
+          
+    except Exception as e:
+        print("An Error Has Occurred")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
