@@ -4,7 +4,7 @@ import pandas as pd
 import sys
 import math
 
-def kmeans_pp(points: np.ndarray, k: int):
+def kmeans(points, k):
 
     np.random.seed(1234)
     n = len(points)
@@ -13,19 +13,15 @@ def kmeans_pp(points: np.ndarray, k: int):
     centroids_idx = [first_centroid_idx]
     centroids = [points[first_centroid_idx]]
     
-    for _ in range(1, int(k)):
-        # Calculate distances to nearest centroid for each point
+    for x in range(1, int(k)):
         distances = np.full(n, np.inf)
         for i, point in enumerate(points):
             for centroid in centroids:
-                # Calculate Euclidean distance (not squared)
                 curr_dist = np.sqrt(np.sum((point - centroid) ** 2))
                 distances[i] = min(distances[i], curr_dist)
-        
-        # Normalize distances to get probabilities
+
         probabilities = distances / np.sum(distances)
-        
-        # Choose next centroid
+
         next_centroid_idx = np.random.choice(n, p=probabilities)
         centroids_idx.append(next_centroid_idx)
         centroids.append(points[next_centroid_idx])
@@ -85,7 +81,7 @@ def main():
             sys.exit()
 
         
-        initial_centroids_idx, initial_centroids = kmeans_pp(points, k)
+        initial_centroids_idx, initial_centroids = kmeans(points, k)
         
         points_for_c = points.tolist()
         
